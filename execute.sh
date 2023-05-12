@@ -22,7 +22,7 @@ for dir in "${directories[@]}"
 do
   echo "Processing directory: $dir"
   cd "$dir"
-  kubectl apply -f manifest.yml
+  kubectl apply -f deployment.yml
 done
 
 # Return to the original directorys
