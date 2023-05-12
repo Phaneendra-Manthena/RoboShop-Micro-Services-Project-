@@ -25,5 +25,5 @@ do
   kubectl apply -f manifest.yml
 done
 
-# Return to the original directory
+# Return to the original directorys
 cd "$current_dir"
