@@ -1,0 +1,43 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ratings-config
+data:
+  PDO_URL: "mysql"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ratings
+  labels:
+    name: ratings
+    tier: app
+spec:
+  containers:
+  - name: ratings
+    imagePullPolicy: Always
+    image: phani997/ratings:k1
+    envFrom:
+    - configMapRef:
+        name: ratings-config
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "256Mi"
+      limits:
+        cpu: "200m"
+        memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ratings
+spec:
+  selector:
+    name: ratings
+    tier: app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

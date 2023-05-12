@@ -1,0 +1,481 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cart-config
+data:
+  CATALOGUE_HOST: "http://catalogue"
+  REDIS_HOST: "redis"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: cart
+      tier: app
+  template:
+    metadata:
+      labels:
+        name: cart
+        tier: app
+    spec:
+      containers:
+        - name: cart
+          imagePullPolicy: Always
+          image: phani997/cart:k1
+          envFrom:
+            - configMapRef:
+                name: cart-config
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+          
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart
+spec:
+  selector:
+    name: cart
+    tier: app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: catalogue-config
+data:
+  MONGO_URL: "mongodb://mongodb:27017/catalogue"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalogue
+spec:
+  selector:
+    matchLabels:
+      name: catalogue
+      tier: app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: catalogue
+        tier: app
+    spec:
+      containers:
+      - name: catalogue
+        image: phani997/catalouge:k1
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: catalogue-config
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+        ports:
+        - containerPort: 8080
+      restartPolicy: Always
+      
+       
+      
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalogue
+spec:
+  selector:
+    name: catalogue
+    tier: app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+spec:
+  selector:
+    matchLabels:
+      name: mongodb
+      tier: db
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: mongodb
+        tier: db
+    spec:
+      containers:
+      - name: mongodb
+        image: phani997/mongodb:k1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 27017
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+spec:
+  selector:
+    name: mongodb
+    tier: db
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config
+data:
+  MYSQL_DATABASE: "cities"
+  MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+type: Opaque
+data:
+  MYSQL_USER: c2hpcHBpbmc=
+  MYSQL_PASSWORD: c2VjcmV0
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+       name: mysql
+       tier: db
+  template:
+    metadata:
+      labels:
+         name: mysql
+         tier: db
+    spec:
+      containers:
+        - name: mysql
+          imagePullPolicy: Always
+          image: phani997/mysql:k1
+          envFrom:
+            - configMapRef:
+                name: mysql-config
+            - secretRef:
+                name: mysql-secret
+          ports:
+            - containerPort: 3306
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  selector:
+    name: mysql
+    tier: db
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: payment-config
+data:
+  CART_HOST: "cart:80"
+  USER_HOST: "user"
+  AMQP_HOST: "rabbitmq"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: payment
+      tier: app
+  template:
+    metadata:
+      labels:
+        name: payment
+        tier: app
+    spec:
+      containers:
+        - name: payment
+          imagePullPolicy: Always
+          image: phani997/payment:k1
+          envFrom:
+            - configMapRef:
+                name: payment-config
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+        
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment
+spec:
+  selector:
+    name: payment
+    tier: app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: rabbitmq
+      tier: db
+  template:
+    metadata:
+      labels:
+        name: rabbitmq
+        tier: db
+    spec:
+      containers:
+        - name: rabbitmq
+          imagePullPolicy: Always
+          image: rabbitmq
+          ports:
+            - containerPort: 5672
+            - containerPort: 15672
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+spec:
+  selector:
+    name: rabbitmq
+    tier: db
+  ports:
+    - port: 5672
+      name: amqp
+    - port: 15672
+      name: http
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: redis
+      tier: db
+  template:
+    metadata:
+      labels:
+        name: redis
+        tier: db
+    spec:
+      containers:
+        - name: redis
+          imagePullPolicy: Always
+          image: redis
+          ports:
+            - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  selector:
+    name: redis
+    tier: db
+  ports:
+    - protocol: TCP
+      port: 6379
+      targetPort: 6379
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shipping-config
+data:
+  CART_ENDPOINT: "cart"
+  DB_HOST: "mysql"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shipping
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: shipping
+      tier: app
+  template:
+    metadata:
+      labels:
+        name: shipping
+        tier: app
+    spec:
+      containers:
+      - name: shipping
+        image: phani997/shipping:k1
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: shipping-config
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "200m"
+            memory: "512Mi"
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shipping
+spec:
+  selector:
+    name: shipping
+    tier: app
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 8080
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-config
+data:
+  REDIS_HOST: "redis"
+  MONGO_URL: "mongodb://mongodb:27017/catalogue"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: user
+      tier: app
+  template:
+    metadata:
+      labels:
+       name: user
+       tier: app
+    spec:
+      containers:
+        - name: user
+          imagePullPolicy: Always
+          image: phani997/user:k1
+          envFrom:
+            - configMapRef:
+                name: user-config
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+         
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user
+spec:
+  selector:
+    name: user
+    tier: app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: web
+      tier: frontend
+  template:
+    metadata:
+      labels:
+       name: web
+       tier: frontend
+    spec:
+      containers:
+        - name: web
+          image: phani997/web:k1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-service
+spec:
+  type: LoadBalancer
+  selector:
+    name: web
+    tier: frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

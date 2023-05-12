@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+spec:
+  selector:
+    matchLabels:
+      name: mongodb
+      tier: db
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: mongodb
+        tier: db
+    spec:
+      containers:
+      - name: mongodb
+        image: phani997/mongodb:k1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 27017
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+spec:
+  selector:
+    name: mongodb
+    tier: db
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017
