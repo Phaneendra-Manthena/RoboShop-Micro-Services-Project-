@@ -14,7 +14,7 @@ directories=(
     /root/RoboShop-Micro-Services-Project-/redis
     /root/RoboShop-Micro-Services-Project-/shipping
     /root/RoboShop-Micro-Services-Project-/user
-    /RoboShop-Micro-Services-Project-/web
+    /root/RoboShop-Micro-Services-Project-/web
 )
 
 # Loop through each directory and execute the kubectl apply commands
